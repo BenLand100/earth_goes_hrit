@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+  <head>
+    <meta charset="utf-8">
+    <title>Earth | ben.land</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Realtime satellite images courtesy of the GOES-East geostationary weather satellite captured by my radios.">
+    <link rel="stylesheet" href="https://ben.land/css/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600;1,700;1,800&display=swap" rel="stylesheet"> 
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9LH6TXZN0X"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-9LH6TXZN0X');
+    </script>
+  </head>
+  
+  <body style="">
+    <h1 style="text-align: center;"> Geostationary Earth </h1>
+    
+    <h3 style="text-align: center;"> GOES-East HRIT 1694.1 MHz </h3>
+    
+    <figure class="center">
+      <a id="rgb_link" href="/earth/1/goes_east_full_scale.png">
+        <img id="rgb_img" src="/earth/1/goes_east_small.gif" alt="GOES-East RGB"/>
+      </a>
+    </figure>
+    
+    <div style="text-align: center;">
+      <a onclick="goto_view('visible')" style="text-align: center; display: inline; " id="view_vis" > RGB-Visible </a> |
+      <a onclick="goto_view('ir_clouds')" style="text-align: center; display: inline; " id="view_ir" > IR-Clouds </a> 
+    </div>
+    <div style="text-align: center;">
+      <a onclick="goto_img(6)" style="text-align: center; display: inline; " id="timestamp_6"> T-5 </a> |
+      <a onclick="goto_img(5)" style="text-align: center; display: inline; " id="timestamp_5"> T-4 </a> |
+      <a onclick="goto_img(4)" style="text-align: center; display: inline; " id="timestamp_4"> T-3 </a> |
+      <a onclick="goto_img(3)" style="text-align: center; display: inline; " id="timestamp_3"> T-2 </a> |
+      <a onclick="goto_img(2)" style="text-align: center; display: inline; " id="timestamp_2"> T-1 </a> |
+      <a onclick="goto_img(1)" style="text-align: center; display: inline; " id="timestamp_1"> T-0 </a>
+    </div>
+    
+    <h3 style="text-align: center;"> About these Images</h3>
+    <p>
+    The images above are sourced from one of the GOES weather satellites parked in geostationary orbit at the GOES-East location. 
+    Previously this was GOES-16 and going on from April 2025 is GOES-19, both of the GOES-R variety.
+    The GOES-R satellites include a High-Rate Image Transmission (HRIT) broadcast on 1.6941 GHz, which can be received by low-cost software defined radios and a small parabolic dish.
+    For high-fidelity reception and long-term stability, I utilize a Noelec Sawbird GOES filter and low-noise amplifier centered on 1.7GHz coupled to a 1.5GHz Ham-it-down downconverter.
+    The downconvert to 194.1 MHz helps to minimize loss in 15m of RG-58 coax leading back to an RTL-SDR v4 dongle, which is more than capable of receiving it directly.
+    Satdump is used in CLI mode to capture and decode the HRIT signal, while some bash scripts stage the images for viewing as they are received and decoded.
+    This is a simple Javascript-powered static HTML page for viewing the results.
+    
+    </p>
+    
+    
+  </body>
+  <script>
+    var current_img = 1;
+    var current_view = "visible";
+    var img_fullsize = "goes_east_full_scale.png";
+    var img_thumbnail = "goes_east_small.gif";
+    var timestamps = ["","","","","",""];
+    
+    function update_img() {
+      document.getElementById("rgb_link").href = "/earth/" + current_img + "/" + timestamps[current_img-1] + "_" + img_fullsize;
+      document.getElementById("rgb_img").src = "/earth/" + current_img + "/" + timestamps[current_img-1] + "_" + img_thumbnail;
+    }
+    
+    function goto_view(v) {
+      if (v == "visible") {
+        document.getElementById("view_vis").style.fontWeight = 'bold';
+        current_view = "visible";
+        img_fullsize = "goes_east_full_scale.png";
+        img_thumbnail = "goes_east_small.gif"
+        update_img();
+      } else {
+        document.getElementById("view_vis").style.fontWeight = 'normal';
+      }
+      if (v == "ir_clouds") {
+        document.getElementById("view_ir").style.fontWeight = 'bold';
+        current_view = "ir_clouds";
+        img_fullsize = "goes_east_ir_full_scale.png";
+        img_thumbnail = "goes_east_ir_small.gif"
+        update_img();
+      } else {
+        document.getElementById("view_ir").style.fontWeight = 'normal';
+      }
+    }
+    
+    function fetch_timestamp(i) {
+      return fetch(i+"/timestamp").then(response => {
+        return response.text()
+      }).then(text => {
+        timestamps[i-1] = text;
+        var itm = document.getElementById("timestamp_"+i);
+        if (text.includes(':')) {
+          itm.innerHTML = text;
+        } else {
+          itm.innerHTML = text.replace(/....-(..-..)_(..)-(..)-(..)/,"$1 $2:$3");
+        }
+        itm.style.fontWeight = i == current_img ? 'bold' : 'normal';
+        return text;
+      });
+    }
+    
+    function goto_img(i) {
+      for (var j = 1; j <= 6; j++) {
+        if (i == j) {
+          document.getElementById("timestamp_"+j).style.fontWeight = 'bold';
+        } else {
+          document.getElementById("timestamp_"+j).style.fontWeight = 'normal';
+        }
+      }
+      current_img = i;
+      update_img();
+    }
+    
+    async function refresh() {
+      var old_one = document.getElementById("timestamp_1").innerHTML;
+      promises = new Array()
+      for (var j = 1; j <= 6; j++) {
+        promises.push(fetch_timestamp(j));
+      }
+      await Promise.all(promises);
+      var new_one = document.getElementById("timestamp_1").innerHTML;
+      console.log(timestamps);
+      if (new_one != old_one) {
+        goto_img(current_img);
+      }
+    }
+    
+    refresh();
+    setInterval(refresh, 300000);
+    
+  </script>
+</html>
