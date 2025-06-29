@@ -8,6 +8,8 @@ find IMAGES L2 -mmin +120 -type f \
     ! -name '*G16_15_*.png' \
     ! -name '*G16_13_*.png' \
     ! -name '*G18_13_*.png' \
+    ! -name '*G19_15_*.png' \
+    ! -name '*G19_13_*.png' \
     -delete -print
 
 

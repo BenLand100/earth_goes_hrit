@@ -11,8 +11,8 @@ if [ ! -f $LAST_FILE ]; then
     touch "$LAST_FILE"
 fi
 
-MOST_RECENT_VIS=$( ls IMAGES/GOES-16/Full\ Disk/*/abi_rgb_ABI_False_Color.png | sort | tail -n3 )
-MOST_RECENT_IR=$( ls IMAGES/GOES-16/Full\ Disk/*/G16_13_*.png | sort | tail -n3 )
+MOST_RECENT_VIS=$( ls IMAGES/GOES-19/Full\ Disk/*/abi_rgb_ABI_False_Color.png | sort | tail -n3 )
+MOST_RECENT_IR=$( ls IMAGES/GOES-19/Full\ Disk/*/G19_13_*.png | sort | tail -n3 )
 
 expr='s@(.*)/[^/]+@\1@' 
 
@@ -20,7 +20,7 @@ MOST_RECENT_COMBO=$(comm -12 <(echo "$MOST_RECENT_VIS" | sed -Ee $expr ) <(echo 
 MOST_RECENT_DIR=$(echo "$MOST_RECENT_COMBO" | sort | tail -n1 )
 
 MOST_RECENT_VIS=$( echo "$MOST_RECENT_DIR"/abi_rgb_ABI_False_Color.png | tail -n1 )
-MOST_RECENT_IR=$( echo "$MOST_RECENT_DIR"/G16_13_*.png | tail -n1 )
+MOST_RECENT_IR=$( echo "$MOST_RECENT_DIR"/G19_13_*.png | tail -n1 )
 
 LAST_DIR=$( cat "$LAST_FILE" )
 if [ "$MOST_RECENT_DIR" != "$LAST_DIR" ]; then
